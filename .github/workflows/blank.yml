@@ -1,0 +1,27 @@
+name: Build CYD Zero
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Compile Arduino sketch
+        uses: arduino/compile-sketches@v1
+        with:
+          fqbn: esp32:esp32:esp32
+          sketch-paths: CYD_FlipperUI.ino
+          libraries: |
+            - name: TFT_eSPI
+            - name: XPT2046_Touchscreen
+
+      - name: Upload .bin artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: CYD-Zero-firmware
+          path: |
+            **/CYD_FlipperUI.ino.bin
