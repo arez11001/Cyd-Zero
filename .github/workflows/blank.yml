@@ -53,10 +53,11 @@ jobs:
 
       - name: Compile sketch
         run: |
+          mkdir -p ./build
           $HOME/bin/arduino-cli compile \
             --fqbn esp32:esp32:esp32 \
             --output-dir ./build \
-            CYD_FlipperUI.ino
+            $GITHUB_WORKSPACE/CYD_FlipperUI.ino
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
