@@ -14,24 +14,26 @@ jobs:
 
       - name: Install Arduino CLI
         run: |
-          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+          mkdir -p $HOME/bin
+          curl -fsSL https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz -o arduino-cli.tar.gz
+          tar -xzf arduino-cli.tar.gz -C $HOME/bin
           echo "$HOME/bin" >> $GITHUB_PATH
 
-      - name: Configure Arduino CLI
+      - name: Configure and install ESP32
         run: |
-          arduino-cli config init
-          arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-          arduino-cli core update-index
-          arduino-cli core install esp32:esp32@2.0.17
+          $HOME/bin/arduino-cli config init
+          $HOME/bin/arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          $HOME/bin/arduino-cli core update-index
+          $HOME/bin/arduino-cli core install esp32:esp32@2.0.17
 
       - name: Install libraries
         run: |
-          arduino-cli lib install "TFT_eSPI"
-          arduino-cli lib install "XPT2046_Touchscreen"
+          $HOME/bin/arduino-cli lib install "TFT_eSPI"
+          $HOME/bin/arduino-cli lib install "XPT2046_Touchscreen"
 
       - name: Patch TFT_eSPI User_Setup.h
         run: |
-          cat > ~/Arduino/libraries/TFT_eSPI/User_Setup.h << 'EOF'
+          cat > $HOME/Arduino/libraries/TFT_eSPI/User_Setup.h << 'EOF'
           #define ILI9341_DRIVER
           #define TFT_MISO 12
           #define TFT_MOSI 13
@@ -44,24 +46,19 @@ jobs:
           #define LOAD_GLCD
           #define LOAD_FONT2
           #define LOAD_FONT4
-          #define LOAD_FONT6
-          #define LOAD_FONT7
-          #define LOAD_FONT8
-          #define LOAD_GFXFF
           #define SMOOTH_FONT
           #define SPI_FREQUENCY  40000000
-          #define SPI_READ_FREQUENCY 20000000
           #define SPI_TOUCH_FREQUENCY 2500000
           EOF
 
       - name: Compile sketch
         run: |
-          arduino-cli compile \
+          $HOME/bin/arduino-cli compile \
             --fqbn esp32:esp32:esp32 \
             --output-dir ./build \
             CYD_FlipperUI.ino
 
-      - name: Upload firmware artifact
+      - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
           name: CYD-Zero-firmware
