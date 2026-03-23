@@ -1,9 +1,38 @@
-- name: Compile sketch
+name: Build CYD Zero
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Arduino CLI
         run: |
-          mkdir -p ./CYD_FlipperUI
-          cp $GITHUB_WORKSPACE/CYD_FlipperUI.ino ./CYD_FlipperUI/CYD_FlipperUI.ino
-          mkdir -p ./build
-          $HOME/bin/arduino-cli compile \
-            --fqbn esp32:esp32:esp32 \
-            --output-dir ./build \
-            ./CYD_FlipperUI
+          mkdir -p $HOME/bin
+          curl -fsSL https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz -o arduino-cli.tar.gz
+          tar -xzf arduino-cli.tar.gz -C $HOME/bin
+      - name: Configure and install ESP32
+        run: |
+          $HOME/bin/arduino-cli config init
+          $HOME/bin/arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          $HOME/bin/arduino-cli core update-index
+          $HOME/bin/arduino-cli core install esp32:esp32@2.0.17
+      - name: Install libraries
+        run: |
+          $HOME/bin/arduino-cli lib install "TFT_eSPI"
+          $HOME/bin/arduino-cli lib install "XPT2046_Touchscreen"
+      - name: Patch TFT_eSPI
+        run: |
+          printf '#define ILI9341_DRIVER\n#define TFT_MISO 12\n#define TFT_MOSI 13\n#define TFT_SCLK 14\n#define TFT_CS 15\n#define TFT_DC 2\n#define TFT_RST -1\n#define LOAD_GLCD\n#define SMOOTH_FONT\n#define SPI_FREQUENCY 40000000\n' > $HOME/Arduino/libraries/TFT_eSPI/User_Setup.h
+      - name: Compile sketch
+        run: |
+          mkdir -p ./CYD_FlipperUI ./build
+          cp CYD_FlipperUI.ino ./CYD_FlipperUI/CYD_FlipperUI.ino
+          $HOME/bin/arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir ./build ./CYD_FlipperUI
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: CYD-Zero-firmware
+          path: ./build/*.bin
